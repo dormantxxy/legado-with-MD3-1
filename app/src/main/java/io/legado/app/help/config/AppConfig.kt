@@ -605,9 +605,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val shakePageTurn
         get() = appCtx.getPrefBoolean(PreferKey.shakePageTurn, false)
 
-    //体感翻页灵敏度 1-5
+    //体感翻页灵敏度 1-5（ListPreference 存的是字符串，需兼容）
     val shakePageSensitivity
-        get() = appCtx.getPrefInt(PreferKey.shakePageSensitivity, 3)
+        get() = appCtx.getPrefString(PreferKey.shakePageSensitivity, "3")?.toIntOrNull()
+            ?: appCtx.getPrefInt(PreferKey.shakePageSensitivity, 3)
 
     //反转体感翻页方向
     val shakePageReverse
