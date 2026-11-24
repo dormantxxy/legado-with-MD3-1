@@ -175,6 +175,7 @@ object PreferKey {
     const val shakePageTurn = "shakePageTurn"
     const val shakePageSensitivity = "shakePageSensitivity"
     const val shakePageReverse = "shakePageReverse"
+    const val shakePageBothNext = "shakePageBothNext"
     const val mouseWheelPage = "mouseWheelPage"
     const val recordHeapDump = "recordHeapDump"
     const val optimizeRender = "optimizeRender"
