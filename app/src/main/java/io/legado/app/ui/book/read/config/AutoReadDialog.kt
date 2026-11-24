@@ -59,7 +59,7 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
         switchShakeBothNext.isChecked = AppConfig.shakePageBothNext
         switchShakeBothNext.isEnabled = AppConfig.shakePageTurn
 
-        val sensitivity = AppConfig.shakePageSensitivity.coerceIn(1, 5)
+        val sensitivity = AppConfig.shakePageSensitivity.coerceIn(1, 100)
         seekShakeSensitivity.value = sensitivity.toFloat()
         tvShakeSensitivity.text = sensitivity.toString()
         seekShakeSensitivity.addOnChangeListener { _, value, fromUser ->
