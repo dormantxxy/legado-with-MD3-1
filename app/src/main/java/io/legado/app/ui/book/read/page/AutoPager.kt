@@ -98,29 +98,22 @@ class AutoPager(private val readView: ReadView) : Runnable {
             return
         }
 
-        if (readView.isScroll) {
-            if (!isPausing) {
-                readView.curPage.scroll(-scrollOffset)
-                scrollOffset = 0
-            }
-        } else {
-            val bottom = progress
-            val width = readView.width
+        val bottom = progress
+        val width = readView.width
 
-            canvasRecorder.recordIfNeeded(readView.nextPage)
-            canvas.withClip(0, 0, width, bottom) {
-                canvasRecorder.draw(this)
-            }
-
-            canvas.drawRect(
-                0f,
-                bottom.toFloat() - 1,
-                width.toFloat(),
-                bottom.toFloat(),
-                paint
-            )
-            if (!isPausing) readView.postInvalidate()
+        canvasRecorder.recordIfNeeded(readView.nextPage)
+        canvas.withClip(0, 0, width, bottom) {
+            canvasRecorder.draw(this)
         }
+
+        canvas.drawRect(
+            0f,
+            bottom.toFloat() - 1,
+            width.toFloat(),
+            bottom.toFloat(),
+            paint
+        )
+        if (!isPausing) readView.postInvalidate()
 
     }
 
@@ -141,14 +134,12 @@ class AutoPager(private val readView: ReadView) : Runnable {
         }
         scrollOffset = scrollOffsetRemain.toInt()
         this.scrollOffsetRemain -= scrollOffset
-        if (!readView.isScroll) {
-            progress += scrollOffset
-            if (progress >= height) {
-                if (!readView.fillPage(PageDirection.NEXT)) {
-                    stop()
-                } else {
-                    reset()
-                }
+        progress += scrollOffset
+        if (progress >= height) {
+            if (!readView.fillPage(PageDirection.NEXT)) {
+                stop()
+            } else {
+                reset()
             }
         }
     }
