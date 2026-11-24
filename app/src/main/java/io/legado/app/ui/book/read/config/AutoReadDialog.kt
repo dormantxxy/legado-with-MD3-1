@@ -10,6 +10,7 @@ import io.legado.app.databinding.DialogAutoReadBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.utils.putPrefBoolean
+import io.legado.app.utils.putPrefString
 //import io.legado.app.lib.theme.bottomBackground
 //import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.model.ReadAloud
@@ -50,11 +51,31 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
         switchShakePage.isChecked = AppConfig.shakePageTurn
         switchShakeBothNext.isChecked = AppConfig.shakePageBothNext
         switchShakeBothNext.isEnabled = AppConfig.shakePageTurn
+
+        val sensitivity = AppConfig.shakePageSensitivity.coerceIn(1, 5)
+        seekShakeSensitivity.value = sensitivity.toFloat()
+        tvShakeSensitivity.text = sensitivity.toString()
+        seekShakeSensitivity.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser) {
+                return@addOnChangeListener
+            }
+            val v = value.toInt().coerceIn(1, 5)
+            tvShakeSensitivity.text = v.toString()
+            requireContext().putPrefString(
+                io.legado.app.constant.PreferKey.shakePageSensitivity, v.toString()
+            )
+        }
+
         switchShakePage.setOnCheckedChangeListener { _, checked ->
             requireContext().putPrefBoolean(io.legado.app.constant.PreferKey.shakePageTurn, checked)
             (activity as? ReadBookActivity)?.setShakePageDetector(checked)
             switchShakeBothNext.isEnabled = checked
+            llShakeSensitivity.isEnabled = checked
+            seekShakeSensitivity.isEnabled = checked
         }
+        llShakeSensitivity.isEnabled = AppConfig.shakePageTurn
+        seekShakeSensitivity.isEnabled = AppConfig.shakePageTurn
+
         switchShakeBothNext.setOnCheckedChangeListener { _, checked ->
             requireContext().putPrefBoolean(io.legado.app.constant.PreferKey.shakePageBothNext, checked)
         }
