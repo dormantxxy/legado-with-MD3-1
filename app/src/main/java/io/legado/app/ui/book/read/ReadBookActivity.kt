@@ -1302,57 +1302,57 @@ class ReadBookActivity : BaseReadBookActivity(),
             dismissDialogFragment<AutoReadDialog>()
             upScreenTimeOut()
         }
+    }
 
-        /**
-         * 自动翻页底栏：暂停/继续 + 速度调节 + 停止
-         */
-        private fun initAutoPageBar() = binding.autoPageBar.run {
-            root.setOnClickListener(null)
-            ibAutoPageBarPause.setOnClickListener {
-                val pager = binding.readView.autoPager
-                if (pager.isPausing) {
-                    pager.resume()
-                } else {
-                    pager.pause()
-                }
-                upAutoPagePauseIcon()
+    /**
+     * 自动翻页底栏：暂停/继续 + 速度调节 + 停止
+     */
+    private fun initAutoPageBar() = binding.autoPageBar.run {
+        root.setOnClickListener(null)
+        ibAutoPageBarPause.setOnClickListener {
+            val pager = binding.readView.autoPager
+            if (pager.isPausing) {
+                pager.resume()
+            } else {
+                pager.pause()
             }
-            ibAutoPageBarStop.setOnClickListener {
-                autoPageStop()
+            upAutoPagePauseIcon()
+        }
+        ibAutoPageBarStop.setOnClickListener {
+            autoPageStop()
+        }
+        seekAutoPageBar.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser) {
+                return@addOnChangeListener
             }
-            seekAutoPageBar.addOnChangeListener { _, value, fromUser ->
-                if (!fromUser) {
-                    return@addOnChangeListener
-                }
-                val speed = value.toInt().coerceIn(1, 120)
-                ReadBookConfig.autoReadSpeed = speed
-                tvAutoPageBarSpeed.text = String.format(Locale.ROOT, "%ds", speed)
-            }
+            val speed = value.toInt().coerceIn(1, 120)
+            ReadBookConfig.autoReadSpeed = speed
+            tvAutoPageBarSpeed.text = String.format(Locale.ROOT, "%ds", speed)
+        }
+        upAutoPageSpeedValue()
+    }
+
+    private fun upAutoPageBar(show: Boolean) {
+        binding.autoPageBar.root.visibility = if (show) View.VISIBLE else View.GONE
+        if (show) {
+            binding.autoPageBar.seekAutoPageBar.value =
+                ReadBookConfig.autoReadSpeed.toFloat().coerceIn(1f, 120f)
             upAutoPageSpeedValue()
+            upAutoPagePauseIcon()
         }
+    }
 
-        private fun upAutoPageBar(show: Boolean) {
-            binding.autoPageBar.root.visibility = if (show) View.VISIBLE else View.GONE
-            if (show) {
-                binding.autoPageBar.seekAutoPageBar.value =
-                    ReadBookConfig.autoReadSpeed.toFloat().coerceIn(1f, 120f)
-                upAutoPageSpeedValue()
-                upAutoPagePauseIcon()
-            }
-        }
+    private fun upAutoPageSpeedValue() {
+        val speed = ReadBookConfig.autoReadSpeed.coerceIn(1, 120)
+        binding.autoPageBar.tvAutoPageBarSpeed.text =
+            String.format(Locale.ROOT, "%ds", speed)
+    }
 
-        private fun upAutoPageSpeedValue() {
-            val speed = ReadBookConfig.autoReadSpeed.coerceIn(1, 120)
-            binding.autoPageBar.tvAutoPageBarSpeed.text =
-                String.format(Locale.ROOT, "%ds", speed)
-        }
-
-        private fun upAutoPagePauseIcon() {
-            val paused = binding.readView.autoPager.isPausing
-            binding.autoPageBar.ibAutoPageBarPause.apply {
-                setIconResource(if (paused) R.drawable.ic_play_filled else R.drawable.ic_pause)
-                contentDescription = getString(if (paused) R.string.resume else R.string.pause)
-            }
+    private fun upAutoPagePauseIcon() {
+        val paused = binding.readView.autoPager.isPausing
+        binding.autoPageBar.ibAutoPageBarPause.apply {
+            setIconResource(if (paused) R.drawable.ic_play_filled else R.drawable.ic_pause)
+            contentDescription = getString(if (paused) R.string.resume else R.string.pause)
         }
     }
 
