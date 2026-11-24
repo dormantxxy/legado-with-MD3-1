@@ -44,6 +44,13 @@
         android:layout_height="match_parent"
         android:visibility="gone" />
 
+    <include
+        android:id="@+id/auto_page_bar"
+        layout="@layout/view_auto_page_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom" />
+
     <View
         android:id="@+id/navigation_bar"
         android:layout_width="match_parent"
