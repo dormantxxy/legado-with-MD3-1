@@ -49,7 +49,10 @@ import io.legado.app.help.book.isMobi
 import io.legado.app.help.book.removeType
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.gesture.ShakePageDetector
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.help.video.VideoUtils
 import java.util.Locale
 import io.legado.app.help.config.ReadTipConfig
 import io.legado.app.help.coroutine.Coroutine
@@ -418,10 +421,14 @@ class ReadBookActivity : BaseReadBookActivity(),
             }
         }
         shakePageDetector.register()
+        if (currentVideoUrl != null) {
+            videoPlayer?.playWhenReady = true
+        }
     }
 
     override fun onPause() {
         super.onPause()
+        videoPlayer?.playWhenReady = false
         shakePageDetector.unregister()
         autoPageStop()
         backupJob?.cancel()
@@ -1316,6 +1323,36 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
     }
 
+    // 视频内容页播放器（书源直接输出视频地址时使用）
+    private var videoPlayer: ExoPlayer? = null
+    private var currentVideoUrl: String? = null
+
+    /**
+     * 视频内容页处理：识别到视频地址时用播放器浮层代替文本
+     */
+    private fun upVideoPage(page: TextPage) {
+        val url = VideoUtils.extractVideoUrl(page.text)
+        if (url != null) {
+            if (url != currentVideoUrl) {
+                videoPlayer?.release()
+                videoPlayer = ExoPlayer.Builder(this).build().also { player ->
+                    binding.videoView.player = player
+                    player.setMediaItem(MediaItem.fromUri(url))
+                    player.prepare()
+                    player.playWhenReady = true
+                }
+            }
+            binding.videoView.visible()
+        } else {
+            binding.videoView.gone()
+            if (videoPlayer != null) {
+                videoPlayer?.release()
+                videoPlayer = null
+            }
+        }
+        currentVideoUrl = url
+    }
+
     /**
      * 供自动翻页弹窗即时开关体感翻页
      */
@@ -1800,6 +1837,7 @@ class ReadBookActivity : BaseReadBookActivity(),
     }
 
     override fun onLayoutPageCompleted(index: Int, page: TextPage) {
+        upVideoPage(page)
         upSeekBarThrottle.invoke()
         binding.readView.onLayoutPageCompleted(index, page)
     }
@@ -1900,6 +1938,8 @@ class ReadBookActivity : BaseReadBookActivity(),
 
     override fun onDestroy() {
         super.onDestroy()
+        videoPlayer?.release()
+        videoPlayer = null
         tts?.clearTts()
         textActionMenu.dismiss()
         popupAction.dismiss()
