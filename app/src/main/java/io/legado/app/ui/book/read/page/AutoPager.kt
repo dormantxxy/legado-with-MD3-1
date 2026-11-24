@@ -18,7 +18,8 @@ class AutoPager(private val readView: ReadView) : Runnable {
     private var progress = 0
     var isRunning = false
         private set
-    private var isPausing = false
+    var isPausing = false
+        private set
     private var isEInkMode = false
     private var scrollOffsetRemain = 0.0
     private var scrollOffset = 0
