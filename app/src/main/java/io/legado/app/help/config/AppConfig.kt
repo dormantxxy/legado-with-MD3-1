@@ -614,6 +614,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val shakePageReverse
         get() = appCtx.getPrefBoolean(PreferKey.shakePageReverse, false)
 
+    //左右抖动都翻下一页（侧躺等场景）
+    val shakePageBothNext
+        get() = appCtx.getPrefBoolean(PreferKey.shakePageBothNext, false)
+
     val mouseWheelPage
         get() = appCtx.getPrefBoolean(PreferKey.mouseWheelPage, true)
 
