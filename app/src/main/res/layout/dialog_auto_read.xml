@@ -54,6 +54,38 @@
         android:layout_marginHorizontal="8dp"
         android:text="@string/shake_page_turn" />
 
+    <LinearLayout
+        android:id="@+id/ll_shake_sensitivity"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/shake_page_sensitivity" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/seek_shake_sensitivity"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:stepSize="1.0"
+            android:valueFrom="1.0"
+            android:valueTo="5.0" />
+
+        <TextView
+            android:id="@+id/tv_shake_sensitivity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="24dp"
+            android:gravity="center" />
+
+    </LinearLayout>
+
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/switch_shake_both_next"
         android:layout_width="match_parent"
