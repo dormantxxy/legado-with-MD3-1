@@ -30,7 +30,6 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.BookType
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
-import io.legado.app.utils.putPrefBoolean
 import io.legado.app.constant.Status
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -1282,21 +1281,31 @@ class ReadBookActivity : BaseReadBookActivity(),
      * 自动翻页
      */
     override fun autoPage() {
-        ReadAloud.stop(this)
-        if (isAutoPage) {
-            autoPageStop()
-        } else {
-            // 体感翻页与定时自动翻页互斥：启动定时翻页时关闭体感
-            if (AppConfig.shakePageTurn) {
-                putPrefBoolean(PreferKey.shakePageTurn, false)
-                shakePageDetector.unregister()
-            }
+        // 点击底栏按钮直接打开自动翻页弹窗，由弹窗内开关控制启用
+        showDialogFragment<AutoReadDialog>()
+    }
+
+    /**
+     * 供自动翻页弹窗启停翻页引擎（不关闭弹窗）
+     */
+    fun startAutoPagerOnly() {
+        if (!isAutoPage) {
             binding.readView.autoPager.start()
             binding.readMenu.setAutoPage(true)
             screenTimeOut = -1L
             screenOffTimerStart()
         }
     }
+
+    fun stopAutoPagerOnly() {
+        if (isAutoPage) {
+            binding.readView.autoPager.stop()
+            binding.readMenu.setAutoPage(false)
+            upScreenTimeOut()
+        }
+    }
+
+    fun isAutoPagerRunning(): Boolean = isAutoPage
 
     override fun autoPageStop() {
         if (isAutoPage) {
@@ -1315,17 +1324,6 @@ class ReadBookActivity : BaseReadBookActivity(),
             shakePageDetector.register()
         } else {
             shakePageDetector.unregister()
-        }
-    }
-
-    /**
-     * 供自动翻页弹窗：开启体感时停掉定时翻页引擎（不关闭弹窗本身）
-     */
-    fun stopAutoPagerOnly() {
-        if (isAutoPage) {
-            binding.readView.autoPager.stop()
-            binding.readMenu.setAutoPage(false)
-            upScreenTimeOut()
         }
     }
 
