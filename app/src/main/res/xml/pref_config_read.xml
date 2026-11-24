@@ -160,32 +160,6 @@
             android:title="@string/key_page_on_long_press"
             app:isBottomBackground="true" />
 
-        <io.legado.app.lib.prefs.SwitchPreference
-            android:defaultValue="false"
-            android:key="shakePageTurn"
-            android:title="@string/shake_page_turn"
-            app:isBottomBackground="true" />
-
-        <io.legado.app.lib.prefs.NameListPreference
-            android:defaultValue="3"
-            android:entries="@array/shake_page_sensitivity_title"
-            android:entryValues="@array/shake_page_sensitivity_value"
-            android:key="shakePageSensitivity"
-            android:title="@string/shake_page_sensitivity"
-            app:isBottomBackground="true" />
-
-        <io.legado.app.lib.prefs.SwitchPreference
-            android:defaultValue="false"
-            android:key="shakePageReverse"
-            android:title="@string/reverse_shake_page"
-            app:isBottomBackground="true" />
-
-        <io.legado.app.lib.prefs.SwitchPreference
-            android:defaultValue="false"
-            android:key="shakePageBothNext"
-            android:summary="@string/shake_page_both_next_summary"
-            android:title="@string/shake_page_both_next"
-            app:isBottomBackground="true" />
 
         <io.legado.app.lib.prefs.Preference
             android:key="pageTouchSlop"
