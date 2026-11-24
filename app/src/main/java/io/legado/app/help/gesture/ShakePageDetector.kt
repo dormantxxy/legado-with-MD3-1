@@ -30,6 +30,9 @@ class ShakePageDetector(
     // 上次触发时间，冷却期防连翻
     private var lastTriggerTime = 0L
 
+    // 本次注册时间，用于侧躺时的基线预热
+    private var registerTime = 0L
+
     fun register() {
         if (!AppConfig.shakePageTurn) {
             return
@@ -39,6 +42,7 @@ class ShakePageDetector(
         }
         accelerometer?.let {
             baselineX = 0f
+            registerTime = SystemClock.elapsedRealtime()
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
         }
     }
@@ -52,20 +56,34 @@ class ShakePageDetector(
             return
         }
         val x = event.values[0]
-        // 跟踪静态基线（约1秒收敛），隔离持机角度带来的重力分量
-        baselineX += BASELINE_ALPHA * (x - baselineX)
-
         val now = SystemClock.elapsedRealtime()
-        if (now - lastTriggerTime < COOLDOWN_MILLIS) {
+
+        // 侧躺优化：注册后先预热基线（约2秒），避免持机姿态突变导致误翻
+        if (now - registerTime < WARMUP_MILLIS) {
+            baselineX += BASELINE_ALPHA * (x - baselineX)
             return
         }
 
         val delta = x - baselineX
+        // 冲击期间冻结基线，防止把抖动本身吸收进基线
+        if (abs(delta) <= threshold * 0.6f) {
+            baselineX += BASELINE_ALPHA * (x - baselineX)
+        }
+
+        if (now - lastTriggerTime < COOLDOWN_MILLIS) {
+            return
+        }
+
         if (abs(delta) > threshold) {
             lastTriggerTime = now
-            // 抖向左侧（delta<0）默认下一页，与滑动方向一致
-            val direction = if (delta < 0) 1 else -1
-            onShake(if (AppConfig.shakePageReverse) -direction else direction)
+            if (AppConfig.shakePageBothNext) {
+                // 左右抖动都翻下一页（侧躺阅读）
+                onShake(1)
+            } else {
+                // 抖向左侧（delta<0）默认下一页，与滑动方向一致
+                val direction = if (delta < 0) 1 else -1
+                onShake(if (AppConfig.shakePageReverse) -direction else direction)
+            }
         }
     }
 
@@ -78,5 +96,8 @@ class ShakePageDetector(
         // 触发后冷却，抖一次只翻一页
         private const val COOLDOWN_MILLIS = 800L
         private const val BASELINE_ALPHA = 0.02f
+
+        // 侧躺/姿态切换后的基线预热时间
+        private const val WARMUP_MILLIS = 2000L
     }
 }
