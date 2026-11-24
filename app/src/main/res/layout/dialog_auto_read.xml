@@ -15,37 +15,12 @@
         android:minHeight="0dp"
         android:layout_gravity="center_horizontal" />
 
-    <LinearLayout
-        android:id="@+id/ll_tts_SpeechRate"
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/switch_auto_page"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/tv_read_speed_title"
-            style="@style/ChapterNameText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/auto_page_speed" />
-
-        <TextView
-            android:id="@+id/tv_read_speed"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textSize="16sp" />
-
-    </LinearLayout>
-
-    <com.google.android.material.slider.Slider
-        android:id="@+id/seek_auto_read"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:stepSize="1.0"
-        android:valueFrom="1.0"
-        android:valueTo="120.0"
-        tools:ignore="UnusedAttribute" />
+        android:layout_marginHorizontal="8dp"
+        android:text="@string/auto_next_page" />
 
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/switch_shake_page"
@@ -75,7 +50,7 @@
             android:layout_weight="1"
             android:stepSize="1.0"
             android:valueFrom="1.0"
-            android:valueTo="5.0" />
+            android:valueTo="100.0" />
 
         <TextView
             android:id="@+id/tv_shake_sensitivity"
