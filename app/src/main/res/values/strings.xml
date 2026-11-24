@@ -805,6 +805,8 @@
     <string name="text_full_justify">Text Justified</string>
     <string name="text_bottom_justify">Text Align Bottom</string>
     <string name="auto_page_speed">Auto scroll speed</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
     <string name="sort_by_url">Sort by URL</string>
     <string name="backup_summary">Backup the local and WebDAV simultaneously</string>
     <string name="backup_sync_mode">Auto Backup Sync</string>
