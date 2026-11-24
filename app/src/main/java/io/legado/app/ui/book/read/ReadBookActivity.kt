@@ -292,11 +292,14 @@ class ReadBookActivity : BaseReadBookActivity(),
     private var justInitData: Boolean = false
     private var syncDialog: AlertDialog? = null
 
-    private val shakePageDetector = ShakePageDetector(this) { direction ->
-        if (menuLayoutIsVisible) {
-            return@ShakePageDetector
+    // lazy: 字段初始化早于 onCreate，System service 此时不可用
+    private val shakePageDetector by lazy {
+        ShakePageDetector(this) { direction ->
+            if (menuLayoutIsVisible) {
+                return@ShakePageDetector
+            }
+            keyPage(if (direction > 0) PageDirection.NEXT else PageDirection.PREV)
         }
-        keyPage(if (direction > 0) PageDirection.NEXT else PageDirection.PREV)
     }
 
     @SuppressLint("ClickableViewAccessibility")
