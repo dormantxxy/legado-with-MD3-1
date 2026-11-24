@@ -1356,6 +1356,17 @@ class ReadBookActivity : BaseReadBookActivity(),
         }
     }
 
+    /**
+     * 供自动翻页弹窗即时开关体感翻页
+     */
+    fun setShakePageDetector(enable: Boolean) {
+        if (enable) {
+            shakePageDetector.register()
+        } else {
+            shakePageDetector.unregister()
+        }
+    }
+
     override fun openSourceEditActivity() {
         ReadBook.bookSource?.let {
             sourceEditActivity.launch {
