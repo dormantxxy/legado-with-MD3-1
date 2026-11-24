@@ -308,7 +308,6 @@ class ReadBookActivity : BaseReadBookActivity(),
         super.onCreate(savedInstanceState)
 
         upScreenTimeOut()
-        initAutoPageBar()
         ReadBook.register(this)
         binding.cursorLeft.setOnTouchListener(this)
         binding.cursorRight.setOnTouchListener(this)
@@ -1288,7 +1287,6 @@ class ReadBookActivity : BaseReadBookActivity(),
         } else {
             binding.readView.autoPager.start()
             binding.readMenu.setAutoPage(true)
-            upAutoPageBar(true)
             screenTimeOut = -1L
             screenOffTimerStart()
         }
@@ -1298,61 +1296,8 @@ class ReadBookActivity : BaseReadBookActivity(),
         if (isAutoPage) {
             binding.readView.autoPager.stop()
             binding.readMenu.setAutoPage(false)
-            upAutoPageBar(false)
             dismissDialogFragment<AutoReadDialog>()
             upScreenTimeOut()
-        }
-    }
-
-    /**
-     * 自动翻页底栏：暂停/继续 + 速度调节 + 停止
-     */
-    private fun initAutoPageBar() = binding.autoPageBar.run {
-        root.setOnClickListener(null)
-        ibAutoPageBarPause.setOnClickListener {
-            val pager = binding.readView.autoPager
-            if (pager.isPausing) {
-                pager.resume()
-            } else {
-                pager.pause()
-            }
-            upAutoPagePauseIcon()
-        }
-        ibAutoPageBarStop.setOnClickListener {
-            autoPageStop()
-        }
-        seekAutoPageBar.addOnChangeListener { _, value, fromUser ->
-            if (!fromUser) {
-                return@addOnChangeListener
-            }
-            val speed = value.toInt().coerceIn(1, 120)
-            ReadBookConfig.autoReadSpeed = speed
-            tvAutoPageBarSpeed.text = String.format(Locale.ROOT, "%ds", speed)
-        }
-        upAutoPageSpeedValue()
-    }
-
-    private fun upAutoPageBar(show: Boolean) {
-        binding.autoPageBar.root.visibility = if (show) View.VISIBLE else View.GONE
-        if (show) {
-            binding.autoPageBar.seekAutoPageBar.value =
-                ReadBookConfig.autoReadSpeed.toFloat().coerceIn(1f, 120f)
-            upAutoPageSpeedValue()
-            upAutoPagePauseIcon()
-        }
-    }
-
-    private fun upAutoPageSpeedValue() {
-        val speed = ReadBookConfig.autoReadSpeed.coerceIn(1, 120)
-        binding.autoPageBar.tvAutoPageBarSpeed.text =
-            String.format(Locale.ROOT, "%ds", speed)
-    }
-
-    private fun upAutoPagePauseIcon() {
-        val paused = binding.readView.autoPager.isPausing
-        binding.autoPageBar.ibAutoPageBarPause.apply {
-            setIconResource(if (paused) R.drawable.ic_play_filled else R.drawable.ic_pause)
-            contentDescription = getString(if (paused) R.string.resume else R.string.pause)
         }
     }
 
@@ -1829,12 +1774,10 @@ class ReadBookActivity : BaseReadBookActivity(),
 
     override fun onMenuShow() {
         binding.readView.autoPager.pause()
-        upAutoPagePauseIcon()
     }
 
     override fun onMenuHide() {
         binding.readView.autoPager.resume()
-        upAutoPagePauseIcon()
     }
 
     override fun refresh() {
