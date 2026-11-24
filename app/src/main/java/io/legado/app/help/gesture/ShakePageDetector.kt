@@ -6,32 +6,42 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.SystemClock
+import android.view.Surface
+import android.view.WindowManager
 import io.legado.app.help.config.AppConfig
 import kotlin.math.abs
 
 /**
  * 体感翻页：左右抖动手机翻页
  *
- * 以加速度 X 轴为检测对象，使用动态基线过滤持机姿态的静态重力分量，
- * 只有短促的水平冲击（主动抖动）才会触发翻页；走路、颠簸等持续低幅运动被基线跟踪自然滤除。
+ * 核心设计：
+ * 1. 屏幕坐标系投影：通过旋转矢量传感器 + 屏幕旋转角度，把加速度投影到"屏幕横向"，
+ *    竖屏、横屏、侧躺横持下抖动方向都与屏幕内容方向一致（侧躺优化核心）。
+ * 2. 动态基线：跟踪重力在屏幕横向的静态分量，隔离持机姿态差异。
+ * 3. 边沿触发：触发一次后必须先回到基线附近才重新武装，
+ *    手机转过去停住不归位只会翻一页，不会连续翻页。
  */
 class ShakePageDetector(
-    context: Context,
+    private val context: Context,
     private val onShake: (direction: Int) -> Unit,
 ) : SensorEventListener {
 
     private val sensorManager =
         context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private var accelerometer: Sensor? = null
+    private var rotationVector: Sensor? = null
 
-    // 动态基线（低通滤波跟踪静态重力分量）
-    private var baselineX = 0f
+    private val rotationMatrix = FloatArray(9)
+    private val screenMatrix = FloatArray(9)
+    private var hasOrientation = false
 
-    // 上次触发时间，冷却期防连翻
+    // 屏幕横向的动态基线
+    private var baseline = 0f
+
     private var lastTriggerTime = 0L
 
-    // 本次注册时间，用于侧躺时的基线预热
-    private var registerTime = 0L
+    // 边沿触发状态：false = 离开基线中（已触发或基线未稳定），禁止触发
+    private var armed = false
 
     fun register() {
         if (!AppConfig.shakePageTurn) {
@@ -39,65 +49,99 @@ class ShakePageDetector(
         }
         if (accelerometer == null) {
             accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+            rotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         }
+        baseline = 0f
+        armed = false
         accelerometer?.let {
-            baselineX = 0f
-            registerTime = SystemClock.elapsedRealtime()
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+        }
+        rotationVector?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
         }
     }
 
     fun unregister() {
         sensorManager.unregisterListener(this)
+        hasOrientation = false
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type != Sensor.TYPE_ACCELEROMETER) {
-            return
+        when (event.sensor.type) {
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                val screenRotation = try {
+                    val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                    wm.defaultDisplay.rotation
+                } catch (e: Exception) {
+                    Surface.ROTATION_0
+                }
+                when (screenRotation) {
+                    Surface.ROTATION_90 -> SensorManager.remapCoordinateSystem(
+                        rotationMatrix, SensorManager.AXIS_Y, SensorManager.AXIS_MINUS_X, screenMatrix
+                    )
+                    Surface.ROTATION_270 -> SensorManager.remapCoordinateSystem(
+                        rotationMatrix, SensorManager.AXIS_MINUS_Y, SensorManager.AXIS_X, screenMatrix
+                    )
+                    Surface.ROTATION_180 -> SensorManager.remapCoordinateSystem(
+                        rotationMatrix, SensorManager.AXIS_MINUS_X, SensorManager.AXIS_MINUS_Z, screenMatrix
+                    )
+                    else -> System.arraycopy(rotationMatrix, 0, screenMatrix, 0, 9)
+                }
+                hasOrientation = true
+            }
+
+            Sensor.TYPE_ACCELEROMETER -> handleAccelerometer(event.values)
         }
-        val x = event.values[0]
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+
+    private fun handleAccelerometer(values: FloatArray) {
+        // 加速度投影到屏幕横向（无旋转矢量数据时退化为传感器 X 轴）
+        val screenX = if (hasOrientation) {
+            screenMatrix[0] * values[0] + screenMatrix[1] * values[1] + screenMatrix[2] * values[2]
+        } else {
+            values[0]
+        }
+
+        val threshold = 7.5f - AppConfig.shakePageSensitivity.coerceIn(1, 5)
         val now = SystemClock.elapsedRealtime()
+        val delta = screenX - baseline
 
-        // 侧躺优化：注册后先预热基线（约2秒），避免持机姿态突变导致误翻
-        if (now - registerTime < WARMUP_MILLIS) {
-            baselineX += BASELINE_ALPHA * (x - baselineX)
+        if (abs(delta) <= threshold * ARM_RATIO) {
+            // 在基线附近：快速收敛基线，并重新武装（边沿触发关键）
+            baseline += BASELINE_FAST * (screenX - baseline)
+            armed = true
             return
         }
 
-        val delta = x - baselineX
-        // 冲击期间冻结基线，防止把抖动本身吸收进基线
-        if (abs(delta) <= threshold * 0.6f) {
-            baselineX += BASELINE_ALPHA * (x - baselineX)
-        }
+        // 离开基线：慢速吸收静态偏移（转动不归位时基线约3秒追上，配合 armed 防连翻）
+        baseline += BASELINE_SLOW * (screenX - baseline)
 
-        if (now - lastTriggerTime < COOLDOWN_MILLIS) {
-            return
-        }
-
-        if (abs(delta) > threshold) {
+        if (armed && now - lastTriggerTime >= COOLDOWN_MILLIS) {
             lastTriggerTime = now
+            armed = false
             if (AppConfig.shakePageBothNext) {
                 // 左右抖动都翻下一页（侧躺阅读）
                 onShake(1)
             } else {
-                // 抖向左侧（delta<0）默认下一页，与滑动方向一致
+                // 抖向屏幕左侧（delta<0）默认下一页，与滑动方向一致
                 val direction = if (delta < 0) 1 else -1
                 onShake(if (AppConfig.shakePageReverse) -direction else direction)
             }
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
-
-    private val threshold: Float
-        get() = 7.5f - AppConfig.shakePageSensitivity.coerceIn(1, 5)
-
     companion object {
         // 触发后冷却，抖一次只翻一页
         private const val COOLDOWN_MILLIS = 800L
-        private const val BASELINE_ALPHA = 0.02f
 
-        // 侧躺/姿态切换后的基线预热时间
-        private const val WARMUP_MILLIS = 2000L
+        // 回到基线的判定比例（阈值×0.4 以内视为归位）
+        private const val ARM_RATIO = 0.4f
+
+        // 基线收敛系数：归位时快（约0.5秒收敛），偏移时慢（避免吸收抖动、慢慢吸收姿态偏移）
+        private const val BASELINE_FAST = 0.06f
+        private const val BASELINE_SLOW = 0.008f
     }
 }
