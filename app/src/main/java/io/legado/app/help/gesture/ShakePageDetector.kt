@@ -115,11 +115,36 @@ class ShakePageDetector(
         val now = SystemClock.elapsedRealtime()
         val delta = screenX - baseline
 
+        // 候选确认期：冻结基线、跳过归位判定，只等反方向回摆。
+        // 否则回摆经过零点会被"归位分支"拦截，反方向冲击永远无法确认。
+        if (candidateStage) {
+            if (now - candidateTime > REVERSAL_WINDOW_MILLIS) {
+                // 窗口内没有回摆：单次冲击（放下/挪动手机），忽略
+                candidateStage = false
+            } else {
+                val dir = if (delta < 0) -1f else 1f
+                if (dir != candidateDir && abs(delta) > threshold * REVERSAL_RATIO) {
+                    // 反方向回摆确认 => 真实抖动，翻页
+                    candidateStage = false
+                    armed = false
+                    lastTriggerTime = now
+                    if (AppConfig.shakePageBothNext) {
+                        // 左右抖动都翻下一页（侧躺阅读）
+                        onShake(1)
+                    } else {
+                        // 抖向屏幕左侧默认下一页，与滑动方向一致
+                        val direction = if (candidateDir < 0) 1 else -1
+                        onShake(if (AppConfig.shakePageReverse) -direction else direction)
+                    }
+                }
+            }
+            return
+        }
+
         // 在基线附近：快速收敛基线，回到待命状态
         if (abs(delta) <= threshold * ARM_RATIO) {
             baseline += BASELINE_FAST * (screenX - baseline)
             armed = true
-            candidateStage = false
             return
         }
 
@@ -130,33 +155,12 @@ class ShakePageDetector(
             return
         }
 
-        if (!candidateStage) {
-            // 第一次冲击：只登记候选方向，不翻页。
-            // 放下手机、挪位置、调整姿势都只产生单次冲击，等不到回摆就会被丢弃。
-            if (abs(delta) > threshold) {
-                candidateStage = true
-                candidateDir = if (delta < 0) -1f else 1f
-                candidateTime = now
-            }
-        } else if (now - candidateTime <= REVERSAL_WINDOW_MILLIS) {
-            // 候选期内出现反方向回摆 => 确认为真实抖动，翻页
-            val dir = if (delta < 0) -1f else 1f
-            if (dir != candidateDir && abs(delta) > threshold * REVERSAL_RATIO) {
-                candidateStage = false
-                armed = false
-                lastTriggerTime = now
-                if (AppConfig.shakePageBothNext) {
-                    // 左右抖动都翻下一页（侧躺阅读）
-                    onShake(1)
-                } else {
-                    // 抖向屏幕左侧默认下一页，与滑动方向一致
-                    val direction = if (candidateDir < 0) 1 else -1
-                    onShake(if (AppConfig.shakePageReverse) -direction else direction)
-                }
-            }
-        } else {
-            // 候选期内没有回摆：单次冲击（放下/挪动手机），忽略
-            candidateStage = false
+        // 第一次冲击：只登记候选方向，不翻页。
+        // 放下手机、挪位置、调整姿势都只产生单次冲击，等不到回摆就会被丢弃。
+        if (abs(delta) > threshold) {
+            candidateStage = true
+            candidateDir = if (delta < 0) -1f else 1f
+            candidateTime = now
         }
     }
 
