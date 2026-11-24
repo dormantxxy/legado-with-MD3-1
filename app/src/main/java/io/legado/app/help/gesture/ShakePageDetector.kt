@@ -105,7 +105,8 @@ class ShakePageDetector(
             values[0]
         }
 
-        val threshold = 7.5f - AppConfig.shakePageSensitivity.coerceIn(1, 5)
+        // 灵敏度 1-100 → 阈值 7.95（最钝）~2.5（最灵敏）
+        val threshold = 8.0f - AppConfig.shakePageSensitivity.coerceIn(1, 100) / 100f * 5.5f
         val now = SystemClock.elapsedRealtime()
         val delta = screenX - baseline
 
