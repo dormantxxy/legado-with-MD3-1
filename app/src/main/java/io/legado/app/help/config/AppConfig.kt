@@ -606,7 +606,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         get() = appCtx.getPrefBoolean(PreferKey.shakePageTurn, false)
 
     //体感翻页灵敏度 1-100
-    val shakePageSensitivity
+    val shakePageSensitivity: Int
         get() {
             val raw = appCtx.getPrefString(PreferKey.shakePageSensitivity, "50")?.toIntOrNull()
                 ?: appCtx.getPrefInt(PreferKey.shakePageSensitivity, 50)
