@@ -43,6 +43,11 @@ class ShakePageDetector(
     // 边沿触发状态：false = 离开基线中（已触发或基线未稳定），禁止触发
     private var armed = false
 
+    // 回摆确认：第一次冲击只登记，等反方向回摆才算真抖动
+    private var candidateStage = false
+    private var candidateDir = 0f
+    private var candidateTime = 0L
+
     fun register() {
         if (!AppConfig.shakePageTurn) {
             return
@@ -110,27 +115,48 @@ class ShakePageDetector(
         val now = SystemClock.elapsedRealtime()
         val delta = screenX - baseline
 
+        // 在基线附近：快速收敛基线，回到待命状态
         if (abs(delta) <= threshold * ARM_RATIO) {
-            // 在基线附近：快速收敛基线，并重新武装（边沿触发关键）
             baseline += BASELINE_FAST * (screenX - baseline)
             armed = true
+            candidateStage = false
             return
         }
 
-        // 离开基线：慢速吸收静态偏移（转动不归位时基线约3秒追上，配合 armed 防连翻）
+        // 离开基线：慢速吸收静态偏移（转动不归位时基线约3秒追上）
         baseline += BASELINE_SLOW * (screenX - baseline)
 
-        if (armed && now - lastTriggerTime >= COOLDOWN_MILLIS) {
-            lastTriggerTime = now
-            armed = false
-            if (AppConfig.shakePageBothNext) {
-                // 左右抖动都翻下一页（侧躺阅读）
-                onShake(1)
-            } else {
-                // 抖向屏幕左侧（delta<0）默认下一页，与滑动方向一致
-                val direction = if (delta < 0) 1 else -1
-                onShake(if (AppConfig.shakePageReverse) -direction else direction)
+        if (!armed || now - lastTriggerTime < COOLDOWN_MILLIS) {
+            return
+        }
+
+        if (!candidateStage) {
+            // 第一次冲击：只登记候选方向，不翻页。
+            // 放下手机、挪位置、调整姿势都只产生单次冲击，等不到回摆就会被丢弃。
+            if (abs(delta) > threshold) {
+                candidateStage = true
+                candidateDir = if (delta < 0) -1f else 1f
+                candidateTime = now
             }
+        } else if (now - candidateTime <= REVERSAL_WINDOW_MILLIS) {
+            // 候选期内出现反方向回摆 => 确认为真实抖动，翻页
+            val dir = if (delta < 0) -1f else 1f
+            if (dir != candidateDir && abs(delta) > threshold * REVERSAL_RATIO) {
+                candidateStage = false
+                armed = false
+                lastTriggerTime = now
+                if (AppConfig.shakePageBothNext) {
+                    // 左右抖动都翻下一页（侧躺阅读）
+                    onShake(1)
+                } else {
+                    // 抖向屏幕左侧默认下一页，与滑动方向一致
+                    val direction = if (candidateDir < 0) 1 else -1
+                    onShake(if (AppConfig.shakePageReverse) -direction else direction)
+                }
+            }
+        } else {
+            // 候选期内没有回摆：单次冲击（放下/挪动手机），忽略
+            candidateStage = false
         }
     }
 
@@ -140,6 +166,10 @@ class ShakePageDetector(
 
         // 回到基线的判定比例（阈值×0.4 以内视为归位）
         private const val ARM_RATIO = 0.4f
+
+        // 回摆确认窗口与回摆幅度要求
+        private const val REVERSAL_WINDOW_MILLIS = 600L
+        private const val REVERSAL_RATIO = 0.5f
 
         // 基线收敛系数：归位时快（约0.5秒收敛），偏移时慢（避免吸收抖动、慢慢吸收姿态偏移）
         private const val BASELINE_FAST = 0.06f
