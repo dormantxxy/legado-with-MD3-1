@@ -38,7 +38,6 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
             dismiss()
             return@run
         }
-        initOnChange()
         initData()
         initEvent()
         initShakePage()
