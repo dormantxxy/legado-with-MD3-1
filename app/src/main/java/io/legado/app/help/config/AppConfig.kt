@@ -607,8 +607,12 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
 
     //体感翻页灵敏度 1-100
     val shakePageSensitivity
-        get() = appCtx.getPrefString(PreferKey.shakePageSensitivity, "50")?.toIntOrNull()
-            ?: appCtx.getPrefInt(PreferKey.shakePageSensitivity, 50)
+        get() {
+            val raw = appCtx.getPrefString(PreferKey.shakePageSensitivity, "50")?.toIntOrNull()
+                ?: appCtx.getPrefInt(PreferKey.shakePageSensitivity, 50)
+            // 兼容旧版1-5刻度：自动换算到1-100
+            return if (raw in 1..5) raw * 20 else raw.coerceIn(1, 100)
+        }
 
     //反转体感翻页方向
     val shakePageReverse
