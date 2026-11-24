@@ -48,6 +48,14 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
      * 体感翻页（抖动手机翻页）开关，随开关即时生效
      */
     private fun initShakePage() = binding.run {
+        switchAutoPage.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                (activity as? ReadBookActivity)?.startAutoPagerOnly()
+            } else {
+                (activity as? ReadBookActivity)?.stopAutoPagerOnly()
+            }
+        }
+
         switchShakePage.isChecked = AppConfig.shakePageTurn
         switchShakeBothNext.isChecked = AppConfig.shakePageBothNext
         switchShakeBothNext.isEnabled = AppConfig.shakePageTurn
@@ -82,27 +90,8 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
     }
 
     private fun initData() {
-        val speed = if (ReadBookConfig.autoReadSpeed < 1) 1 else ReadBookConfig.autoReadSpeed
-        binding.tvReadSpeed.text = String.format(Locale.ROOT, "%ds", speed)
-        binding.seekAutoRead.value = speed.toFloat()
-    }
-
-    private fun initOnChange() {
-        binding.seekAutoRead.addOnChangeListener { slider, value, fromUser ->
-            val speed = if (value < 1) 1 else value.toInt()
-            binding.tvReadSpeed.text = String.format(Locale.ROOT, "%ds", speed)
-        }
-
-        binding.seekAutoRead.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: Slider) {
-
-            }
-
-            override fun onStopTrackingTouch(slider: Slider) {
-                ReadBookConfig.autoReadSpeed = if (slider.value < 1) 1 else slider.value.toInt()
-                upTtsSpeechRate()
-            }
-        })
+        binding.switchAutoPage.isChecked =
+            (activity as? ReadBookActivity)?.isAutoPagerRunning() ?: false
     }
 
     private fun initEvent() {
@@ -122,14 +111,6 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
             binding.btnAutoPageStop.post {
                 dismissAllowingStateLoss()
             }
-        }
-    }
-
-    private fun upTtsSpeechRate() {
-        ReadAloud.upTtsSpeechRate(requireContext())
-        if (!BaseReadAloudService.pause) {
-            ReadAloud.pause(requireContext())
-            ReadAloud.resume(requireContext())
         }
     }
 
