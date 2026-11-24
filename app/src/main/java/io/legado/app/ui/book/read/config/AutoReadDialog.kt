@@ -7,7 +7,9 @@ import com.google.android.material.slider.Slider
 import io.legado.app.R
 import io.legado.app.base.BaseBottomSheetDialogFragment
 import io.legado.app.databinding.DialogAutoReadBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.utils.putPrefBoolean
 //import io.legado.app.lib.theme.bottomBackground
 //import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.model.ReadAloud
@@ -38,6 +40,24 @@ class AutoReadDialog : BaseBottomSheetDialogFragment(R.layout.dialog_auto_read) 
         initOnChange()
         initData()
         initEvent()
+        initShakePage()
+    }
+
+    /**
+     * 体感翻页（抖动手机翻页）开关，随开关即时生效
+     */
+    private fun initShakePage() = binding.run {
+        switchShakePage.isChecked = AppConfig.shakePageTurn
+        switchShakeBothNext.isChecked = AppConfig.shakePageBothNext
+        switchShakeBothNext.isEnabled = AppConfig.shakePageTurn
+        switchShakePage.setOnCheckedChangeListener { _, checked ->
+            requireContext().putPrefBoolean(io.legado.app.constant.PreferKey.shakePageTurn, checked)
+            (activity as? ReadBookActivity)?.setShakePageDetector(checked)
+            switchShakeBothNext.isEnabled = checked
+        }
+        switchShakeBothNext.setOnCheckedChangeListener { _, checked ->
+            requireContext().putPrefBoolean(io.legado.app.constant.PreferKey.shakePageBothNext, checked)
+        }
     }
 
     private fun initData() {
