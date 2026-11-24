@@ -248,6 +248,10 @@
     <string name="shake_page_turn">抖动手机翻页</string>
     <string name="shake_page_sensitivity">体感翻页灵敏度</string>
     <string name="reverse_shake_page">反转体感翻页方向</string>
+    <string name="shake_page_both_next">左右均为下一页</string>
+    <string name="shake_page_both_next_summary">侧躺阅读时，左右抖动都翻下一页</string>
+    <string name="shake_page_turn_on">体感翻页已开启</string>
+    <string name="shake_page_turn_off">体感翻页已关闭</string>
     <string name="mouse_wheel_page">Mouse Wheel to Turn Page</string>
     <string name="click_turn_page">Tap screen to turn page</string>
     <string name="page_anim">Flip Animation</string>
