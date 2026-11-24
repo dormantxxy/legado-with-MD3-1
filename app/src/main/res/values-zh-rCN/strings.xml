@@ -224,8 +224,6 @@
     <string name="img_cover">封面</string>
     <string name="book">本书</string>
     <string name="volume_key_page">音量键翻页</string>
-    <string name="pause">暂停</string>
-    <string name="resume">继续</string>
     <string name="shake_page_turn">抖动手机翻页</string>
     <string name="shake_page_sensitivity">体感翻页灵敏度</string>
     <string name="reverse_shake_page">反转体感翻页方向</string>
